@@ -1,0 +1,55 @@
+name: Release
+permissions:
+  contents: write
+on:
+  push:
+    tags:
+      - v[0-9]+.*
+env:
+  CARGO_INCREMENTAL: 0
+  CARGO_TERM_COLOR: always
+  RUSTFLAGS: -C debuginfo=0 -D warnings
+jobs:
+  create-release:
+    name: Create release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+      - uses: taiki-e/create-gh-release-action@v1
+        with:
+          branch: main
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  upload-assets:
+    name: Upload assets
+    needs: create-release
+    strategy:
+      matrix:
+        os: [macos-latest, ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+      - uses: dnaka91/actions/build-assets@main
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          bin: actions-test
+  upload-checksums:
+    name: Upload checksums
+    needs: upload-assets
+    runs-on: ubuntu-latest
+    steps:
+      - uses: dnaka91/actions/hash-assets@main
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+  upload-signatures:
+    name: Upload signatures
+    needs: upload-checksums
+    runs-on: ubuntu-latest
+    steps:
+      - uses: dnaka91/actions/sign-assets@main
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          gpg_key: ${{ secrets.GPG_PRIVATE_KEY }}
+          gpg_passphrase: ${{ secrets.GPG_PASSPHRASE }}
