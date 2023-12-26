@@ -19,8 +19,8 @@ jobs:
     continue-on-error: ${{ matrix.checks == 'advisories' }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
       - name: Check ${{ matrix.checks }}
-        uses: dnaka91/actions/deny-check@main
+        uses: EmbarkStudios/cargo-deny-action@v1
         with:
-          checks: ${{ matrix.checks }}
+          command: check ${{ matrix.checks }}
